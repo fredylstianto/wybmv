@@ -11,47 +11,38 @@ interface Star {
   targetY?: number;
 }
 
-interface Props {
+interface StarBackgroundProps {
   formHeart: boolean;
 }
 
-const StarBackground = ({ formHeart }: Props) => {
+const StarBackground = ({ formHeart }: StarBackgroundProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const starsRef = useRef<Star[]>([]);
-  const animationRef = useRef<number>(0);
+  const animationFrameRef = useRef<number>(0);
   const formHeartRef = useRef(formHeart);
-
-  const updateHeartTargets = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const cx = canvas.width / 2;
-    const cy = canvas.height / 2;
-    const min = Math.min(canvas.width, canvas.height);
-    const isPortrait = canvas.height > canvas.width;
-    const scale = (min * (isPortrait ? 0.75 : 0.9)) / 32;
-
-    starsRef.current.forEach((star, i) => {
-      const t = (i / starsRef.current.length) * Math.PI * 2;
-      const x = 16 * Math.pow(Math.sin(t), 3);
-      const y =
-        -(13 * Math.cos(t)
-        - 5 * Math.cos(2 * t)
-        - 2 * Math.cos(3 * t)
-        - Math.cos(4 * t));
-
-      star.targetX = cx + x * scale;
-      star.targetY = cy + y * scale;
-    });
-  };
 
   useEffect(() => {
     formHeartRef.current = formHeart;
-    if (formHeart) updateHeartTargets();
-    else {
-      starsRef.current.forEach(s => {
-        s.targetX = undefined;
-        s.targetY = undefined;
+    
+    if (formHeart && canvasRef.current) {
+      const canvas = canvasRef.current;
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      const screenMin = Math.min(canvas.width, canvas.height);
+      const scale = (screenMin * 0.85) / 32;
+      
+      starsRef.current.forEach((star, i) => {
+        const t = (i / starsRef.current.length) * Math.PI * 2;
+        const x = 16 * Math.pow(Math.sin(t), 3);
+        const y = -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
+
+        star.targetX = centerX + x * scale;
+        star.targetY = centerY + y * scale;
+      });
+    } else {
+      starsRef.current.forEach(star => {
+        star.targetX = undefined;
+        star.targetY = undefined;
       });
     }
   }, [formHeart]);
@@ -63,48 +54,98 @@ const StarBackground = ({ formHeart }: Props) => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const initStars = (force = false) => {
-      if (starsRef.current.length && !force) return;
-
-      const area = canvas.width * canvas.height;
-      const count = Math.floor(area / 8000);
-      starsRef.current = Array.from({ length: count }, () => ({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        radius: Math.random() * 1.2 + 0.4,
-        vx: (Math.random() - 0.5) * 0.3,
-        vy: (Math.random() - 0.5) * 0.3,
-        alpha: Math.random()
-      }));
+    const resizeCanvas = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      initStars();
     };
 
-    const resize = () => {
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = innerWidth * dpr;
-      canvas.height = innerHeight * dpr;
-      canvas.style.width = `${innerWidth}px`;
-      canvas.style.height = `${innerHeight}px`;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      initStars(true);
-      if (formHeartRef.current) updateHeartTargets();
+    const initStars = () => {
+      if (starsRef.current.length > 0) return;
+
+      const numStars = Math.max(150, Math.floor((canvas.width * canvas.height) / 5000));
+      
+      const newStars: Star[] = [];
+      for (let i = 0; i < numStars; i++) {
+        newStars.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          radius: Math.random() * 1.5 + 0.5,
+          vx: (Math.random() - 0.5) * 0.5,
+          vy: (Math.random() - 0.5) * 0.5,
+          alpha: Math.random()
+        });
+      }
+      starsRef.current = newStars;
     };
 
     const draw = () => {
-      ctx.fillStyle = '#000';
+      if (!canvas || !ctx) return;
+      
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#000000';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      starsRef.current.forEach(star => {
+      const isFormingHeart = formHeartRef.current;
+
+      if (isFormingHeart) {
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+        ctx.lineWidth = 0.6;
+        ctx.beginPath();
+        
+        const stars = starsRef.current;
+        const len = stars.length;
+
+        for (let i = 0; i < len; i++) {
+          const star = stars[i];
+          
+          // 1. Perimeter connections (neighbors)
+          const next = stars[(i + 1) % len];
+          ctx.moveTo(star.x, star.y);
+          ctx.lineTo(next.x, next.y);
+
+          // 2. Interior "Tangled" connections
+          // Reduced density: Connect to fewer points
+          // Only connect every 2nd star to one other point
+          if (i % 2 === 0) {
+             const otherIdx = (i + Math.floor(len * 0.5)) % len;
+             const other = stars[otherIdx];
+             ctx.moveTo(star.x, star.y);
+             ctx.lineTo(other.x, other.y);
+          }
+          
+          // Add a few random extra lines for "chaos" but very sparse
+          if (i % 10 === 0) {
+             const otherIdx = (i + Math.floor(len * 0.33)) % len;
+             const other = stars[otherIdx];
+             ctx.moveTo(star.x, star.y);
+             ctx.lineTo(other.x, other.y);
+          }
+        }
+        ctx.stroke();
+      }
+
+      starsRef.current.forEach((star) => {
         ctx.beginPath();
         ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255,255,255,${star.alpha})`;
+        ctx.fillStyle = `rgba(255, 255, 255, ${star.alpha})`;
         ctx.fill();
 
-        if (formHeartRef.current && star.targetX) {
-          star.x += (star.targetX - star.x) * 0.02;
-          star.y += (star.targetY! - star.y) * 0.02;
+        if (isFormingHeart && star.targetX !== undefined && star.targetY !== undefined) {
+          const dx = star.targetX - star.x;
+          const dy = star.targetY - star.y;
+          
+          star.x += dx * 0.02; 
+          star.y += dy * 0.02;
+          
+          if (Math.abs(dx) < 1 && Math.abs(dy) < 1) {
+             star.x += (Math.random() - 0.5) * 0.5;
+             star.y += (Math.random() - 0.5) * 0.5;
+          }
         } else {
           star.x += star.vx;
           star.y += star.vy;
+
           if (star.x < 0) star.x = canvas.width;
           if (star.x > canvas.width) star.x = 0;
           if (star.y < 0) star.y = canvas.height;
@@ -112,23 +153,30 @@ const StarBackground = ({ formHeart }: Props) => {
         }
 
         star.alpha += (Math.random() - 0.5) * 0.02;
-        star.alpha = Math.min(1, Math.max(0.1, star.alpha));
+        if (star.alpha < 0.1) star.alpha = 0.1;
+        if (star.alpha > 1) star.alpha = 1;
       });
 
-      animationRef.current = requestAnimationFrame(draw);
+      animationFrameRef.current = requestAnimationFrame(draw);
     };
 
-    resize();
-    window.addEventListener('resize', resize);
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
     draw();
 
     return () => {
-      window.removeEventListener('resize', resize);
-      cancelAnimationFrame(animationRef.current);
+      window.removeEventListener('resize', resizeCanvas);
+      cancelAnimationFrame(animationFrameRef.current);
     };
   }, []);
 
-  return <canvas ref={canvasRef} className="fixed inset-0 -z-10" />;
+  return (
+    <canvas
+      ref={canvasRef}
+      className="fixed top-0 left-0 w-full h-full -z-10 -translate-y-7 transition-colors duration-1000"
+      id="StarCanvas"
+    />
+  );
 };
 
 export default StarBackground;
