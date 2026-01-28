@@ -127,7 +127,7 @@ const ValentinePage = () => {
                            text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.8)] z-10"
                 initial={{ opacity: 0, scale: 0.5 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 1, duration: 0.8, type: 'spring' }}
+                transition={{ delay: 2.5, duration: 0.8, type: 'spring' }}
               >
                 WILL YOU BE MY VALENTINE, Ryy?
               </motion.h2>
