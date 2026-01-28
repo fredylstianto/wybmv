@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #000;
+  overflow: hidden;
+}
+
+/* Custom scrollbar hide */
+::-webkit-scrollbar {
+  display: none;
+}
