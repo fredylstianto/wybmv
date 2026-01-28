@@ -173,7 +173,7 @@ const StarBackground = ({ formHeart }: StarBackgroundProps) => {
   return (
     <canvas
       ref={canvasRef}
-      className="fixed top-0 left-0 w-full h-full -z-10 -translate-y-7 transition-colors duration-1000"
+      className="fixed top-0 left-0 w-full h-full -z-10 transition-colors duration-1000"
       id="StarCanvas"
     />
   );
