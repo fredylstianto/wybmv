@@ -117,7 +117,7 @@ const ValentinePage = () => {
           {scene === 2 && (
             <motion.section
               key="heart"
-              className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none -translate-y-7"
+              className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 1 }}
