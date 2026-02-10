@@ -114,7 +114,7 @@ const ValentinePage = () => {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 2, type: 'spring' }}
               >
-                WILL YOU BE MY VALENTINE, Ryy?
+                WILL YOU BE MY VALENTINE, Naya?
               </motion.h2>
             </motion.section>
           )}
